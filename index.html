@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SkyCast</title>
+<meta name="description" content="Photograph the sky to see the cloud type and the chance of rain in the next 3 hours.">
+<meta name="theme-color" content="#EAF1F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0D1520" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="SkyCast">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/atkinson-hyperlegible-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/archivo-latin-standard-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <h1 class="brand">SkyCast</h1>
+    <button class="place" id="placeBtn" type="button" aria-haspopup="dialog">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>
+      <span id="placeName">Al Ain</span>
+    </button>
+  </header>
+
+  <main>
+    <!-- ======================= OBSERVE ======================= -->
+    <section class="view" id="view-observe" aria-labelledby="tab-observe">
+      <div class="now" id="now">
+        <p class="now-line" id="nowLine">Loading the forecast for Al Ain…</p>
+        <p class="now-sub" id="nowSub"></p>
+      </div>
+
+      <div class="capture" id="capture">
+        <label class="btn primary" for="inPhoto">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l1.6-2.2h6.8L17 8h3v11H4z"/><circle cx="12" cy="13.3" r="3.6"/></svg>
+          Photograph the sky
+        </label>
+        <input id="inPhoto" type="file" accept="image/*" capture="environment" hidden>
+        <div class="capture-row">
+          <label class="btn" for="inVideo">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6.5" width="12.5" height="11" rx="2"/><path d="m15.5 10.5 5-3v9l-5-3"/></svg>
+            Record a video
+          </label>
+          <input id="inVideo" type="file" accept="video/*" capture="environment" hidden>
+          <label class="btn" for="inGallery">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="m4 17 5-5 4 4 2.5-2.5L20 18"/><circle cx="15.5" cy="9" r="1.6"/></svg>
+            Choose a photo
+          </label>
+          <input id="inGallery" type="file" accept="image/*,video/*" hidden>
+        </div>
+        <p class="hint">Aim at the open sky and keep the sun out of the frame. For a video, hold the phone still for 20 to 60 seconds.</p>
+        <p class="model-status" id="modelStatus" aria-live="polite"></p>
+      </div>
+
+      <div class="working" id="working" hidden aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p id="workingText">Reading the sky…</p>
+      </div>
+
+      <p class="error" id="error" role="alert" hidden></p>
+
+      <article class="result" id="result" hidden>
+        <figure class="shot">
+          <img id="shotImg" alt="Your sky photo">
+          <figcaption>
+            <span class="kind" id="kindCodes"></span>
+            <span class="kind-name" id="kindName"></span>
+          </figcaption>
+        </figure>
+        <p class="blurb" id="kindBlurb"></p>
+        <p class="warn" id="lowConf" hidden>The model is unsure. The sky may hold several cloud types, or the photo may include ground, haze or glare. A photo with more open sky helps.</p>
+
+        <div class="alts" id="alts" aria-label="Other likely sky types"></div>
+
+        <section class="rain" aria-labelledby="rainHead">
+          <div class="gauge-wrap">
+            <svg class="gauge" id="gauge" viewBox="0 0 92 220" role="img" aria-labelledby="gaugeTitle">
+              <title id="gaugeTitle">Rain gauge</title>
+              <defs>
+                <clipPath id="tube"><rect x="30" y="14" width="32" height="190" rx="9"/></clipPath>
+              </defs>
+              <rect class="g-glass" x="30" y="14" width="32" height="190" rx="9"/>
+              <g clip-path="url(#tube)">
+                <rect class="g-water" id="gWater" x="30" y="204" width="32" height="0"/>
+              </g>
+              <rect class="g-rim" x="30" y="14" width="32" height="190" rx="9"/>
+              <g class="g-ticks" id="gTicks"></g>
+            </svg>
+          </div>
+          <div class="rain-text">
+            <h2 id="rainHead" class="rain-label">Chance of rain, next 3 hours</h2>
+            <p class="rain-level"><span id="rainLevel">Low</span> <span class="rain-pct" id="rainPct">0%</span></p>
+            <p class="rain-src" id="rainSrc"></p>
+            <ul class="reasons" id="reasons"></ul>
+          </div>
+        </section>
+
+        <section class="feedback" id="feedback" aria-labelledby="fbHead">
+          <h2 id="fbHead">Was the sky type right?</h2>
+          <div class="chips" id="fbMain">
+            <button type="button" class="chip" id="fbYes">Yes</button>
+            <button type="button" class="chip" id="fbNo">No, it was something else</button>
+          </div>
+          <div class="chips" id="fbPick" hidden></div>
+          <p class="fb-done" id="fbDone" hidden></p>
+          <p class="fb-note">Your answers stay on this phone in the log. They help train SkyCast on UAE skies.</p>
+        </section>
+
+        <details class="more">
+          <summary>Measurements and forecast data</summary>
+          <dl class="facts" id="facts"></dl>
+        </details>
+
+        <button type="button" class="btn ghost again" id="again">Observe again</button>
+      </article>
+    </section>
+
+    <!-- ======================= LOG ======================= -->
+    <section class="view" id="view-log" aria-labelledby="tab-log" hidden>
+      <div class="log-head">
+        <h2>Your observations</h2>
+        <button type="button" class="btn small" id="exportBtn">Export as zip</button>
+      </div>
+      <p class="log-intro">Come back about 3 hours after each photo and record whether it rained. Exported logs can be used to train and check SkyCast on local skies.</p>
+      <ol class="log-list" id="logList"></ol>
+      <div class="empty" id="logEmpty" hidden>
+        <p>No observations yet.</p>
+        <p>Each photo or video you analyse is saved here with its time, place and result.</p>
+      </div>
+    </section>
+
+    <!-- ======================= ABOUT ======================= -->
+    <section class="view prose" id="view-about" aria-labelledby="tab-about" hidden>
+      <h2>Install SkyCast on your phone</h2>
+      <p><strong>iPhone:</strong> open this page in Safari, tap the Share button, then <em>Add to Home Screen</em>.</p>
+      <p><strong>Android:</strong> open it in Chrome, tap the menu, then <em>Install app</em> or <em>Add to Home screen</em>.</p>
+      <p><button type="button" class="btn small" id="installBtn" hidden>Install SkyCast</button></p>
+      <p>After the first visit the sky model is stored on the phone, so cloud recognition also works without internet. The rain estimate then uses the photo only.</p>
+
+      <h2>How it works</h2>
+      <p>A neural network (EfficientNet-B0) running on the phone sorts the sky into one of seven types. It was trained on about 10,000 labelled sky photos and scores 78% on 8,975 photos it had never seen. Rain-bearing cloud is recognised 84% of the time.</p>
+      <p>The chance of rain combines three things: how often that sky type brings rain, how thick and dark the cloud looks (and, in a video, whether it grows or darkens), and the Open-Meteo forecast for your location: rain probability, expected rainfall, atmospheric instability and humidity. The estimate is a guide, not an official forecast.</p>
+
+      <h2>The seven sky types</h2>
+      <dl class="types" id="typesList"></dl>
+
+      <h2>Privacy</h2>
+      <p>Photos are analysed on the phone and are never uploaded. Only your approximate location is sent to Open-Meteo to get the forecast. The log stays on this phone until you export it.</p>
+
+      <h2>Data and credits</h2>
+      <p>Trained on the TJNU Ground-based Cloud Dataset (Liu et al., 2022, IEEE Transactions on Geoscience and Remote Sensing) and the CCSN dataset (Zhang et al., 2018, Geophysical Research Letters). GCD is provided for research use. Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0).</p>
+      <p>Developed by Faisal Baig, Desert Environment Research Center, UAE University.</p>
+      <p class="version" id="version"></p>
+    </section>
+  </main>
+
+  <nav class="tabs" aria-label="Sections">
+    <button type="button" id="tab-observe" class="tab" aria-current="page" data-view="observe">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 8.6 4.7 4.7 0 0 1 17.5 18Z"/></svg>
+      Observe
+    </button>
+    <button type="button" id="tab-log" class="tab" data-view="log">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 8.5h6M9 12h6M9 15.5h4"/></svg>
+      Log <span class="count" id="logCount" hidden></span>
+    </button>
+    <button type="button" id="tab-about" class="tab" data-view="about">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.1"/></svg>
+      About
+    </button>
+  </nav>
+</div>
+
+<!-- location sheet -->
+<dialog class="sheet" id="placeSheet" aria-labelledby="placeHead">
+  <form method="dialog" class="sheet-in" id="placeForm">
+    <h2 id="placeHead">Location for the forecast</h2>
+    <button type="button" class="btn primary" id="gpsBtn">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/><circle cx="12" cy="12" r="7"/></svg>
+      Use my current location
+    </button>
+    <p class="sheet-or">or search for a place</p>
+    <div class="search">
+      <label class="sr" for="placeQ">City or area</label>
+      <input id="placeQ" type="search" placeholder="For example Fujairah" autocomplete="off" enterkeyhint="search">
+    </div>
+    <ul class="hits" id="hits"></ul>
+    <p class="error" id="placeErr" hidden></p>
+    <button class="btn ghost" value="close">Close</button>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="vendor/ort/ort.wasm.min.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

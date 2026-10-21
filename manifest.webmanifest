@@ -1,0 +1,17 @@
+{
+  "name": "SkyCast",
+  "short_name": "SkyCast",
+  "description": "Photograph the sky to see the cloud type and the chance of rain in the next 3 hours.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EAF1F6",
+  "theme_color": "#0F5C86",
+  "categories": ["weather", "education", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
