@@ -62,7 +62,9 @@ export async function exportZip() {
   const head = ["id", "time_local", "time_utc", "lat", "lon", "place", "input", "predicted", "confidence",
     "observer_label", "rained_within_3h", "raining_at_photo", "rain_score", "rain_level", "rain_source",
     "cloud_fraction", "base_darkness", ...CLASSES.map((c) => `p_${c}`),
-    "om_precip_prob_max", "om_precip_sum_mm", "om_cape_max", "om_rh_mean", "photo"];
+    "om_precip_prob_max", "om_precip_sum_mm", "om_showers_sum_mm", "om_cape_max", "om_cin", "om_lifted_index_min",
+    "om_rh_mean", "om_pw_mm", "om_temp", "om_dew_point", "om_cloud_base_m", "om_lapse_850_500", "om_dew_850",
+    "om_gust_max", "om_pressure", "photo"];
   const rows = [head.join(",")];
   for (const o of list) {
     const label = o.observer_label || "";
@@ -72,7 +74,9 @@ export async function exportZip() {
     rows.push([o.id, o.time, o.time_utc, o.lat?.toFixed(5), o.lon?.toFixed(5), o.place, o.input, o.top,
       o.probs?.[o.top]?.toFixed(3), label, o.rained ?? "", o.raining_now ? "yes" : "", o.rain?.score, o.rain?.level, o.rain?.source,
       o.cues?.cloud_fraction, o.cues?.base_darkness, ...CLASSES.map((c) => o.probs?.[c]?.toFixed(4)),
-      w.precip_prob_max, w.precip_sum_mm, w.cape_max, w.rh_mean, fname].map(csvCell).join(","));
+      w.precip_prob_max, w.precip_sum_mm, w.showers_sum_mm, w.cape_max, w.cin_at_cape_max, w.lifted_index_min,
+      w.rh_mean, w.pw_mm, w.temp_now, w.dew_now, w.cloud_base_m, w.lapse_850_500, w.dew_850,
+      w.gust_max, w.pressure_now, fname].map(csvCell).join(","));
   }
   zip.file("observations.csv", rows.join("\n"));
   zip.file("README.txt", [

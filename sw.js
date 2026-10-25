@@ -1,9 +1,9 @@
 // SkyCast service worker: keeps the app, fonts and the sky model on the phone so cloud
 // recognition works offline. Forecast requests always go to the network.
-const VERSION = "skycast-v2.1.0";
+const VERSION = "skycast-v2.2.0";
 const SHELL = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
-  "js/app.js", "js/rain.js", "js/model.js", "js/sky.js", "js/log.js",
+  "js/app.js", "js/rain.js", "js/model.js", "js/sky.js", "js/log.js", "js/home.js",
   "vendor/ort/ort.wasm.min.js", "vendor/ort/ort-wasm-simd-threaded.mjs", "vendor/ort/ort-wasm-simd-threaded.wasm",
   "vendor/jszip.min.js",
   "fonts/atkinson-hyperlegible-latin-400-normal.woff2", "fonts/atkinson-hyperlegible-latin-700-normal.woff2",

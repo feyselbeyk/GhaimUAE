@@ -58,6 +58,42 @@
         <p class="model-status" id="modelStatus" aria-live="polite"></p>
       </div>
 
+      <div class="home" id="home">
+        <section class="panel" id="lastObs" hidden aria-labelledby="lastHead">
+          <h2 id="lastHead" class="panel-h">Your last observation</h2>
+          <div class="last">
+            <img id="lastImg" alt="">
+            <div class="last-body">
+              <p class="last-name" id="lastName"></p>
+              <p class="last-meta" id="lastMeta"></p>
+              <div class="last-ask" id="lastAsk" hidden>
+                <span>Did it rain within 3 hours?</span>
+                <button type="button" class="chip" id="lastYes">Yes</button>
+                <button type="button" class="chip" id="lastNo">No</button>
+              </div>
+              <p class="last-done" id="lastDone" hidden></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="hours" hidden aria-labelledby="hoursHead">
+          <h2 id="hoursHead" class="panel-h">Rain chance, next 12 hours</h2>
+          <div class="hours-chart" id="hoursChart"></div>
+          <p class="hours-tip" id="hoursTip" hidden></p>
+          <details class="hours-more">
+            <summary>Show as a table</summary>
+            <div class="table-wrap"><table id="hoursTable"></table></div>
+          </details>
+        </section>
+
+        <section class="panel" id="atmos" hidden aria-labelledby="atmosHead">
+          <h2 id="atmosHead" class="panel-h">The air above you</h2>
+          <p class="watch" id="watchText"></p>
+          <dl class="readings" id="readings"></dl>
+          <p class="panel-src">Forecast values from Open-Meteo for the next 3 hours. The descriptions are rough guides.</p>
+        </section>
+      </div>
+
       <div class="working" id="working" hidden aria-live="polite">
         <div class="spinner" aria-hidden="true"></div>
         <p id="workingText">Reading the sky…</p>

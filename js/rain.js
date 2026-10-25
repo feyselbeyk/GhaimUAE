@@ -38,9 +38,13 @@ const CONVECTIVE = { cumulonimbus: 0.8, cumulus: 0.8, mixed: 0.4, altocumulus: 0
 
 const OM_URL = "https://api.open-meteo.com/v1/forecast";
 const GEO_URL = "https://geocoding-api.open-meteo.com/v1/search";
-const HOURLY = ["precipitation_probability", "precipitation", "cape", "lifted_index",
-  "relative_humidity_2m", "cloud_cover_low", "cloud_cover_mid"];
-const CURRENT = ["precipitation", "weather_code", "relative_humidity_2m", "cloud_cover", "temperature_2m"];
+// Fetched for the next 12 hours (chart on the home screen); the rain estimate uses the first 3.
+const HOURLY = ["precipitation_probability", "precipitation", "showers", "cape", "lifted_index",
+  "convective_inhibition", "relative_humidity_2m", "temperature_2m", "dew_point_2m",
+  "total_column_integrated_water_vapour", "wind_gusts_10m", "cloud_cover_low", "cloud_cover_mid",
+  "temperature_850hPa", "temperature_500hPa", "dew_point_850hPa", "freezing_level_height"];
+const CURRENT = ["precipitation", "weather_code", "relative_humidity_2m", "cloud_cover", "temperature_2m",
+  "dew_point_2m", "wind_gusts_10m", "pressure_msl"];
 
 const clip = (x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
 const pct = (x) => `${Math.round(x * 100)}%`;
@@ -57,35 +61,64 @@ export async function searchPlace(name, count = 5) {
   }));
 }
 
-export async function fetchWeather(lat, lon, hours = 3) {
+export async function fetchWeather(lat, lon) {
   const u = new URL(OM_URL);
   u.search = new URLSearchParams({
     latitude: lat.toFixed(3), longitude: lon.toFixed(3), timezone: "auto",
-    current: CURRENT.join(","), hourly: HOURLY.join(","), forecast_hours: hours + 1,
+    current: CURRENT.join(","), hourly: HOURLY.join(","), forecast_hours: 12,
   });
   const r = await fetch(u, { signal: AbortSignal.timeout(10000) });
   if (!r.ok) throw new Error(`Open-Meteo answered ${r.status}`);
   return summariseWeather(await r.json());
 }
 
-export function summariseWeather(js) {
-  const h = js.hourly || {}, c = js.current || {};
-  const vals = (k) => (h[k] || []).filter((v) => v !== null && v !== undefined);
-  const mx = (k, d = 0) => (vals(k).length ? Math.max(...vals(k)) : d);
-  const rh = vals("relative_humidity_2m");
+const num = (v) => (v === null || v === undefined || Number.isNaN(v) ? null : v);
+const r1 = (v) => (v === null ? null : Math.round(v * 10) / 10);
+
+// hours: how many hourly steps count as "the next 3 hours" (current hour + 3)
+export function summariseWeather(js, hours = 4) {
+  const H = js.hourly || {}, c = js.current || {};
+  const first = (k) => (H[k] || []).slice(0, hours).filter((v) => num(v) !== null);
+  const mx = (k, d = 0) => (first(k).length ? Math.max(...first(k)) : d);
+  const mn = (k) => (first(k).length ? Math.min(...first(k)) : null);
+  const mean = (k) => (first(k).length ? first(k).reduce((a, b) => a + b, 0) / first(k).length : null);
+  const at0 = (k) => num((H[k] || [])[0]);
+  const t = num(c.temperature_2m) ?? at0("temperature_2m");
+  const td = num(c.dew_point_2m) ?? at0("dew_point_2m");
+  const capeIdx = (H.cape || []).slice(0, hours).reduce((bi, v, i, a) => (v > a[bi] ? i : bi), 0);
+  const series = (H.time || []).map((tm, i) => ({
+    time: tm, prob: num((H.precipitation_probability || [])[i]), mm: num((H.precipitation || [])[i]),
+    temp: num((H.temperature_2m || [])[i]), cape: num((H.cape || [])[i]),
+  }));
   return {
     time: c.time ?? null,
-    temp_now: c.temperature_2m ?? null,
+    temp_now: t,
+    dew_now: td,
     precip_now_mm: c.precipitation || 0,
     weather_code: c.weather_code ?? null,
     rh_now: c.relative_humidity_2m ?? null,
     cloud_now: c.cloud_cover ?? null,
-    precip_prob_max: vals("precipitation_probability").length ? mx("precipitation_probability") : null,
-    precip_sum_mm: Math.round(vals("precipitation").reduce((a, b) => a + b, 0) * 100) / 100,
+    gust_now: num(c.wind_gusts_10m),
+    pressure_now: num(c.pressure_msl),
+    precip_prob_max: first("precipitation_probability").length ? mx("precipitation_probability") : null,
+    precip_sum_mm: Math.round(first("precipitation").reduce((a, b) => a + b, 0) * 100) / 100,
+    showers_sum_mm: Math.round(first("showers").reduce((a, b) => a + b, 0) * 100) / 100,
     cape_max: mx("cape"),
-    lifted_index_min: vals("lifted_index").length ? Math.min(...vals("lifted_index")) : null,
-    rh_mean: rh.length ? Math.round((rh.reduce((a, b) => a + b, 0) / rh.length) * 10) / 10 : (c.relative_humidity_2m ?? null),
+    cin_at_cape_max: num((H.convective_inhibition || [])[capeIdx]),
+    lifted_index_min: mn("lifted_index"),
+    rh_mean: r1(mean("relative_humidity_2m")) ?? (c.relative_humidity_2m ?? null),
+    pw_mm: r1(mean("total_column_integrated_water_vapour")),
+    // lifting condensation level: about 125 m per degree of dew-point depression
+    cloud_base_m: t !== null && td !== null ? Math.max(0, Math.round(125 * (t - td) / 50) * 50) : null,
+    lapse_850_500: at0("temperature_850hPa") !== null && at0("temperature_500hPa") !== null
+      ? r1(at0("temperature_850hPa") - at0("temperature_500hPa")) : null,
+    dew_850: r1(at0("dew_point_850hPa")),
+    freezing_level_m: at0("freezing_level_height"),
+    gust_max: mx("wind_gusts_10m", null),
     low_cloud_max: mx("cloud_cover_low"),
+    series,
+    cape_max_12h: series.reduce((m, x) => Math.max(m, x.cape || 0), 0),
+    prob_max_12h: series.reduce((m, x) => Math.max(m, x.prob || 0), 0),
   };
 }
 
@@ -144,9 +177,14 @@ export function rainLikelihood(probs, cues, weather = null, trend = null) {
     const cape = weather.cape_max || 0;
     const li = weather.lifted_index_min;
     let inst = clip(cape / 1500) + (li !== null && li !== undefined && li < -2 ? 0.2 : 0);
+    const cin = weather.cin_at_cape_max;
+    const capped = cin !== null && cin !== undefined && cin >= 100;
+    if (capped) inst *= 0.5; // a warm layer aloft holds storms back
     inst = clip(inst) * convective;
     const rh = weather.rh_mean;
-    const hum = clip(((rh ?? 50) - 35) / 45);
+    const pw = weather.pw_mm;
+    // moisture: precipitable water when available (about 15 mm = very dry, 40 mm = very moist), else humidity
+    const hum = pw !== null && pw !== undefined ? clip((pw - 15) / 25) : clip(((rh ?? 50) - 35) / 45);
 
     // Either the sky or the forecast can raise the chance (noisy-OR). The forecast cannot
     // cancel what the photo shows: global models (10-25 km grids) often miss the small,
@@ -161,11 +199,16 @@ export function rainLikelihood(probs, cues, weather = null, trend = null) {
         ? "Forecast models expect no rain here, but they often miss small storms. The sky in your photo counts for more."
         : `Forecast models give up to ${Math.round(pp)}% chance of rain in the next 3 hours (${qpf.toFixed(1)} mm expected).`);
     }
-    if (cape >= 500) reasons.push(`The air is unstable (CAPE ${Math.round(cape)} J/kg), which favours showers.`);
-    // evaporation (virga) is likely only under a high, bright cloud base in dry air
-    if (rh !== null && rh !== undefined && rh < 30 && typeTerm > 0.3 && dark < 0.4) {
+    if (cape >= 500 && !capped) reasons.push(`The air is unstable (CAPE ${Math.round(cape)} J/kg), which favours showers.`);
+    if (cape >= 500 && capped) reasons.push(`The air is unstable, but a warm layer aloft (CIN ${Math.round(cin)} J/kg) is holding storms back.`);
+    // evaporation (virga): likely when the cloud base is high above dry ground air and the base looks bright
+    const base = weather.cloud_base_m;
+    const highBase = base !== null && base !== undefined ? base > 2500 : (rh ?? 50) < 30;
+    if (highBase && typeTerm > 0.3 && dark < 0.45) {
       score *= 0.85;
-      reasons.push(`Dry air near the ground (humidity ${Math.round(rh)}%) and a bright cloud base: some rain may evaporate before it lands.`);
+      reasons.push(base !== null && base !== undefined
+        ? `The cloud base is about ${(base / 1000).toFixed(1)} km up in dry air: some rain may evaporate before it lands.`
+        : `Dry air near the ground (humidity ${Math.round(rh)}%): some rain may evaporate before it lands.`);
     }
     if ((weather.precip_now_mm || 0) > 0.1 && typeTerm > 0.4) {
       score = Math.max(score, 0.85);

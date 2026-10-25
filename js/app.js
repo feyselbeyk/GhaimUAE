@@ -2,8 +2,9 @@ import { CLASSES, NAMES, CODES, BLURB, PROPENSITY, fetchWeather, searchPlace, ra
 import { loadModel, classify } from "./model.js";
 import { skyCues, verticalMotion, sampleVideo, slope, median } from "./sky.js";
 import { addObs, updateObs, allObs, deleteObs, photoBlob, exportZip } from "./log.js";
+import { renderHours, renderAtmosphere, renderLast } from "./home.js";
 
-const VERSION = "2.1.0";
+const VERSION = "2.2.0";
 const $ = (id) => document.getElementById(id);
 const LEVEL_VAR = { "Very low": "--water-0", Low: "--water-1", Moderate: "--water-2", High: "--water-3", "Very high": "--water-4" };
 const store = {
@@ -115,7 +116,10 @@ async function refreshNow() {
     if (w.rh_now !== null) bits.push(`humidity ${Math.round(w.rh_now)}%`);
     if (w.cloud_now !== null) bits.push(`cloud cover ${Math.round(w.cloud_now)}%`);
     $("nowSub").textContent = `${bits.join(", ")}. Forecast by Open-Meteo. Photograph the sky to check it against what you see.`;
+    renderHours(w);
+    renderAtmosphere(w, loc.lat, loc.lon);
   } catch {
+    $("hours").hidden = true; $("atmos").hidden = true;
     $("nowLine").textContent = "The forecast is not available offline.";
     $("nowSub").textContent = "Cloud recognition still works. The rain estimate will use the photo only.";
   }
@@ -140,10 +144,10 @@ for (const id of ["inPhoto", "inVideo", "inGallery"]) {
 }
 
 function busy(text) {
-  $("error").hidden = true; $("result").hidden = true; $("capture").hidden = true;
+  $("error").hidden = true; $("result").hidden = true; $("capture").hidden = true; $("home").hidden = true;
   $("working").hidden = false; $("workingText").textContent = text;
 }
-function idle() { $("working").hidden = true; $("capture").hidden = false; }
+function idle() { $("working").hidden = true; $("capture").hidden = false; $("home").hidden = false; }
 function fail(msg) { idle(); $("error").textContent = msg; $("error").hidden = false; }
 
 async function decode(file) {
@@ -234,7 +238,7 @@ async function finish(r) {
   };
   try { await addObs(current); updateCount(); } catch { /* storage full or blocked: still show the result */ }
   renderResult(current, r.rain);
-  idle(); $("capture").hidden = true; $("result").hidden = false;
+  idle(); $("capture").hidden = true; $("home").hidden = true; $("result").hidden = false;
   $("result").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
 }
 const round3 = (x) => Math.round(x * 1000) / 1000;
@@ -363,7 +367,8 @@ $("rainNowBtn").addEventListener("click", async () => {
 });
 
 $("again").addEventListener("click", () => {
-  $("result").hidden = true; $("capture").hidden = false; current = null;
+  $("result").hidden = true; $("capture").hidden = false; $("home").hidden = false; current = null;
+  refreshLast();
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
 
@@ -375,6 +380,18 @@ async function updateCount() {
   } catch { /* IndexedDB unavailable */ }
 }
 updateCount();
+
+async function refreshLast() {
+  try {
+    const list = await allObs();
+    renderLast(list[0], NAMES, async (o, v) => {
+      await updateObs(o.id, { rained: v });
+      toast(v === "yes" ? "Saved: it rained" : "Saved: it stayed dry");
+      refreshLast();
+    });
+  } catch { /* IndexedDB unavailable */ }
+}
+refreshLast();
 
 const fmt = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const urls = [];
