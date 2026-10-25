@@ -110,7 +110,10 @@ export function rainLikelihood(probs, cues, weather = null, trend = null) {
 
   // 2. appearance
   let look = clip(typeTerm + 0.35 * (dark - 0.35));
-  look *= Math.sqrt(clip(frac / 0.5));
+  // partial cloud cover lowers the odds, but a confident rain cloud keeps most of its weight
+  // (a storm photographed with some blue sky beside it is still a storm)
+  const rainCloud = probs.cumulonimbus || 0;
+  look *= Math.max(Math.sqrt(clip(frac / 0.4)), clip(rainCloud * 0.85));
   // only the model decides "clear": thin cirrus can slip past the pixel test
   if ((probs.clearsky || 0) > 0.6 || (frac < 0.05 && (probs.clearsky || 0) > 0.3)) {
     look = 0;
@@ -145,17 +148,24 @@ export function rainLikelihood(probs, cues, weather = null, trend = null) {
     const rh = weather.rh_mean;
     const hum = clip(((rh ?? 50) - 35) / 45);
 
-    const wLook = 0.4 + 0.15 * look;
-    const rest = (1 - wLook) / 0.6;
-    score = wLook * look + rest * (0.35 * nwp + 0.15 * inst + 0.1 * hum);
+    // Either the sky or the forecast can raise the chance (noisy-OR). The forecast cannot
+    // cancel what the photo shows: global models (10-25 km grids) often miss the small,
+    // short-lived convective storms typical of the UAE.
+    const support = 0.35 * nwp + 0.15 * inst + 0.1 * hum;
+    score = 1 - (1 - 0.9 * look) * (1 - support);
+    const forecastDry = nwp < 0.05;
+    if (forecastDry && look > 0.3) score *= 0.85; // a mild discount only
 
     if (pp !== null && pp !== undefined) {
-      reasons.push(`Forecast models give up to ${Math.round(pp)}% chance of rain in the next 3 hours (${qpf.toFixed(1)} mm expected).`);
+      reasons.push(forecastDry && look > 0.5
+        ? "Forecast models expect no rain here, but they often miss small storms. The sky in your photo counts for more."
+        : `Forecast models give up to ${Math.round(pp)}% chance of rain in the next 3 hours (${qpf.toFixed(1)} mm expected).`);
     }
     if (cape >= 500) reasons.push(`The air is unstable (CAPE ${Math.round(cape)} J/kg), which favours showers.`);
-    if (rh !== null && rh !== undefined && rh < 30 && typeTerm > 0.3) {
-      score *= 0.8;
-      reasons.push(`Dry air near the ground (humidity ${Math.round(rh)}%): rain may evaporate before it lands.`);
+    // evaporation (virga) is likely only under a high, bright cloud base in dry air
+    if (rh !== null && rh !== undefined && rh < 30 && typeTerm > 0.3 && dark < 0.4) {
+      score *= 0.85;
+      reasons.push(`Dry air near the ground (humidity ${Math.round(rh)}%) and a bright cloud base: some rain may evaporate before it lands.`);
     }
     if ((weather.precip_now_mm || 0) > 0.1 && typeTerm > 0.4) {
       score = Math.max(score, 0.85);

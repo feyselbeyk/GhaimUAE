@@ -3,7 +3,7 @@ import { loadModel, classify } from "./model.js";
 import { skyCues, verticalMotion, sampleVideo, slope, median } from "./sky.js";
 import { addObs, updateObs, allObs, deleteObs, photoBlob, exportZip } from "./log.js";
 
-const VERSION = "1.0.0";
+const VERSION = "2.1.0";
 const $ = (id) => document.getElementById(id);
 const LEVEL_VAR = { "Very low": "--water-0", Low: "--water-1", Moderate: "--water-2", High: "--water-3", "Very high": "--water-4" };
 const store = {
@@ -314,6 +314,8 @@ function renderResult(o, rain) {
     dt.textContent = k; dd.textContent = v; return [dt, dd];
   }));
 
+  $("rainNowBtn").setAttribute("aria-pressed", String(!!o.raining_now));
+
   // feedback
   $("fbMain").hidden = false; $("fbPick").hidden = true; $("fbDone").hidden = true;
   $("fbYes").setAttribute("aria-pressed", "false"); $("fbNo").setAttribute("aria-pressed", "false");
@@ -339,6 +341,26 @@ async function labelCurrent(k) {
   $("fbDone").textContent = `Saved as ${NAMES[k]}. Thank you.`;
   $("fbDone").hidden = false;
 }
+
+// Ground truth from the observer: it is raining at the moment of the photo.
+$("rainNowBtn").addEventListener("click", async () => {
+  if (!current) return;
+  const on = $("rainNowBtn").getAttribute("aria-pressed") !== "true";
+  $("rainNowBtn").setAttribute("aria-pressed", String(on));
+  current.raining_now = on;
+  current.rained = on ? "yes" : current.rained === "yes" ? null : current.rained;
+  try { await updateObs(current.id, { raining_now: on, rained: current.rained }); } catch { /* ignore */ }
+  if (on) {
+    $("result").style.setProperty("--water", "var(--water-4)");
+    $("rainLevel").textContent = "Raining now";
+    $("rainPct").textContent = "";
+    $("rainSrc").textContent = `Reported by you. SkyCast estimated ${Math.round(current.rain.score * 100)}% from the ${current.rain.source}.`;
+    fillGauge(1);
+    toast("Saved: raining now. Thank you, this helps train SkyCast.");
+  } else {
+    renderResult(current, current.rain);
+  }
+});
 
 $("again").addEventListener("click", () => {
   $("result").hidden = true; $("capture").hidden = false; current = null;
@@ -438,7 +460,7 @@ $("typesList").replaceChildren(...CLASSES.flatMap((k) => {
   dd.textContent = `${BLURB[k]} Rain about ${Math.round(PROPENSITY[k] * 100)}% of the time.`;
   return [dt, dd];
 }));
-$("version").textContent = `Version ${VERSION}. Sky model: EfficientNet-B0, 7 sky types, 256 px.`;
+$("version").textContent = `Version ${VERSION}. Sky model 2.0: EfficientNet-B0, 7 sky types, 256 px.`;
 
 let installEvt = null;
 addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; $("installBtn").hidden = false; });

@@ -60,7 +60,7 @@ export async function exportZip() {
   const list = await allObs();
   const zip = new JSZip();
   const head = ["id", "time_local", "time_utc", "lat", "lon", "place", "input", "predicted", "confidence",
-    "observer_label", "rained_within_3h", "rain_score", "rain_level", "rain_source",
+    "observer_label", "rained_within_3h", "raining_at_photo", "rain_score", "rain_level", "rain_source",
     "cloud_fraction", "base_darkness", ...CLASSES.map((c) => `p_${c}`),
     "om_precip_prob_max", "om_precip_sum_mm", "om_cape_max", "om_rh_mean", "photo"];
   const rows = [head.join(",")];
@@ -70,7 +70,7 @@ export async function exportZip() {
     if (o.photo) zip.file(fname, o.photo);
     const w = o.weather || {};
     rows.push([o.id, o.time, o.time_utc, o.lat?.toFixed(5), o.lon?.toFixed(5), o.place, o.input, o.top,
-      o.probs?.[o.top]?.toFixed(3), label, o.rained ?? "", o.rain?.score, o.rain?.level, o.rain?.source,
+      o.probs?.[o.top]?.toFixed(3), label, o.rained ?? "", o.raining_now ? "yes" : "", o.rain?.score, o.rain?.level, o.rain?.source,
       o.cues?.cloud_fraction, o.cues?.base_darkness, ...CLASSES.map((c) => o.probs?.[c]?.toFixed(4)),
       w.precip_prob_max, w.precip_sum_mm, w.cape_max, w.rh_mean, fname].map(csvCell).join(","));
   }
@@ -82,6 +82,7 @@ export async function exportZip() {
     "  predicted        : sky type from the app",
     "  observer_label   : the sky type the observer confirmed or corrected (empty = not checked)",
     "  rained_within_3h : yes / no as reported by the observer later",
+    "  raining_at_photo : yes if the observer tapped \"It's raining here now\"",
     "  p_*              : model probabilities for the 7 GCD sky types",
     "  om_*             : Open-Meteo forecast values used for the rain estimate",
     "photos/          : the photos (video: the middle frame), named <id>_<observer_label>.jpg",

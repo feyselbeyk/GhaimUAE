@@ -101,6 +101,11 @@
           </div>
         </section>
 
+        <button type="button" class="btn raining" id="rainNowBtn">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 4.6 4.7 4.7 0 0 1 17.5 14Z"/><path d="m8 17-1 3M12 17l-1 3M16 17l-1 3"/></svg>
+          It's raining here now
+        </button>
+
         <section class="feedback" id="feedback" aria-labelledby="fbHead">
           <h2 id="fbHead">Was the sky type right?</h2>
           <div class="chips" id="fbMain">
@@ -144,7 +149,7 @@
       <p>After the first visit the sky model is stored on the phone, so cloud recognition also works without internet. The rain estimate then uses the photo only.</p>
 
       <h2>How it works</h2>
-      <p>A neural network (EfficientNet-B0) running on the phone sorts the sky into one of seven types. It was trained on about 10,000 labelled sky photos and scores 78% on 8,975 photos it had never seen. Rain-bearing cloud is recognised 84% of the time.</p>
+      <p>A neural network (EfficientNet-B0) running on the phone sorts the sky into one of seven types. It was trained on about 39,000 labelled sky photos, including about 20,000 phone photos from NASA's GLOBE Program. On everyday phone photos it had never seen, it names the sky type correctly 94% of the time; on the 8,975 test photos of the GCD research dataset, 78% of the time.</p>
       <p>The chance of rain combines three things: how often that sky type brings rain, how thick and dark the cloud looks (and, in a video, whether it grows or darkens), and the Open-Meteo forecast for your location: rain probability, expected rainfall, atmospheric instability and humidity. The estimate is a guide, not an official forecast.</p>
 
       <h2>The seven sky types</h2>
@@ -154,7 +159,7 @@
       <p>Photos are analysed on the phone and are never uploaded. Only your approximate location is sent to Open-Meteo to get the forecast. The log stays on this phone until you export it.</p>
 
       <h2>Data and credits</h2>
-      <p>Trained on the TJNU Ground-based Cloud Dataset (Liu et al., 2022, IEEE Transactions on Geoscience and Remote Sensing) and the CCSN dataset (Zhang et al., 2018, Geophysical Research Letters). GCD is provided for research use. Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0).</p>
+      <p>Trained on the TJNU Ground-based Cloud Dataset (Liu et al., 2022, IEEE Transactions on Geoscience and Remote Sensing) and the CCSN dataset (Zhang et al., 2018, Geophysical Research Letters), and sky photos from NASA's GLOBE Program: the GLOBE Observer cloud observations and the Cloud GAZE labels made by Zooniverse volunteers. These data were obtained from NASA Langley Research Center, the GLOBE Program and the Zooniverse online platform. GCD is provided for research use. Weather data by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0).</p>
       <p>Developed by Faisal Baig, Desert Environment Research Center, UAE University.</p>
       <p class="version" id="version"></p>
     </section>

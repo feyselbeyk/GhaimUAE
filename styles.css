@@ -158,6 +158,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 .reasons li { padding-left: 14px; position: relative; }
 .reasons li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--line); }
 
+.raining { justify-self: stretch; }
+.raining[aria-pressed="true"] { background: var(--water-4); color: #fff; border-color: transparent; }
+
 /* feedback */
 .feedback h2, .log-head h2, .prose h2, .sheet h2 { font: 700 var(--s-2)/1.25 var(--f-head); font-stretch: 104%; margin: 0; }
 .feedback { display: grid; gap: 10px; }

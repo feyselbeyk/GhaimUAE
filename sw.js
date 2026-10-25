@@ -1,6 +1,6 @@
 // SkyCast service worker: keeps the app, fonts and the sky model on the phone so cloud
 // recognition works offline. Forecast requests always go to the network.
-const VERSION = "skycast-v1.0.0";
+const VERSION = "skycast-v2.1.0";
 const SHELL = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
   "js/app.js", "js/rain.js", "js/model.js", "js/sky.js", "js/log.js",

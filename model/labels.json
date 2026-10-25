@@ -33,5 +33,10 @@
   0.224,
   0.225
  ],
- "model": "efficientnet_b0.ra_in1k"
+ "model": "efficientnet_b0.ra_in1k",
+ "prior_adjust": {
+  "cumulonimbus": 3.0
+ },
+ "version": "2.0",
+ "trained_on": "GCD + CCSN + NASA GLOBE Cloud GAZE + filtered GLOBE Observer photos (2017-2025)"
 }

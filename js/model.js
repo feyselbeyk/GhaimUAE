@@ -82,7 +82,12 @@ export async function classify(source, w, h) {
     const z = e.reduce((a, c) => a + c, 0);
     e.forEach((v, i) => { probs[i] += v / z / boxes.length; });
   }
-  return Object.fromEntries(CLASSES.map((c, i) => [c, probs[i]]));
+  // optional calibration from labels.json, e.g. {"prior_adjust": {"cumulonimbus": 2.5}}:
+  // multiplies a class probability and renormalises (a shift of the decision threshold)
+  const adj = meta.prior_adjust || {};
+  CLASSES.forEach((c, i) => { if (adj[c]) probs[i] *= adj[c]; });
+  const tot = probs.reduce((a, b) => a + b, 0);
+  return Object.fromEntries(CLASSES.map((c, i) => [c, probs[i] / tot]));
 }
 
 function OffscreenCanvasOr(w, h) {
