@@ -4,7 +4,7 @@ import { skyCues, verticalMotion, sampleVideo, slope, median } from "./sky.js";
 import { addObs, updateObs, allObs, deleteObs, photoBlob, exportZip } from "./log.js";
 import { renderHours, renderAtmosphere, renderLast } from "./home.js";
 
-const VERSION = "2.2.0";
+const VERSION = "2.4.0";
 const $ = (id) => document.getElementById(id);
 const LEVEL_VAR = { "Very low": "--water-0", Low: "--water-1", Moderate: "--water-2", High: "--water-3", "Very high": "--water-4" };
 const store = {
@@ -55,7 +55,8 @@ $("gpsBtn").addEventListener("click", () => {
   navigator.geolocation.getCurrentPosition(async (p) => {
     $("gpsBtn").disabled = false;
     const lat = p.coords.latitude, lon = p.coords.longitude;
-    useLocation({ label: `${lat.toFixed(3)}, ${lon.toFixed(3)}`, short: "My location", lat, lon, gps: true });
+    useLocation({ label: `${lat.toFixed(3)}, ${lon.toFixed(3)}`, short: "My location", lat, lon, gps: true,
+                  acc: Math.round(p.coords.accuracy || 0) });
     $("placeSheet").close();
   }, (e) => {
     $("gpsBtn").disabled = false;
@@ -231,7 +232,7 @@ async function finish(r) {
   const top = r.rain.top;
   current = {
     id: `${now.getTime()}`, time: localIso(now), time_utc: now.toISOString(),
-    lat: loc.lat, lon: loc.lon, place: loc.gps ? "GPS" : loc.label, gps: !!loc.gps,
+    lat: loc.lat, lon: loc.lon, place: loc.gps ? "GPS" : loc.label, gps: !!loc.gps, gps_accuracy_m: loc.acc ?? null,
     input: r.input, top, probs: r.probs, rain: { score: r.rain.score, level: r.rain.level, source: r.rain.source, reasons: r.rain.reasons },
     cues: { cloud_fraction: round3(r.cues.cloud_fraction), base_darkness: round3(r.cues.base_darkness) },
     trend: r.trend || null, weather: r.weather, photo: r.photo, observer_label: null, rained: null, app_version: VERSION,
@@ -319,6 +320,8 @@ function renderResult(o, rain) {
   }));
 
   $("rainNowBtn").setAttribute("aria-pressed", String(!!o.raining_now));
+  $("intensityChips").hidden = !o.raining_now;
+  $("intensityChips").querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.int === o.rain_intensity)));
 
   // feedback
   $("fbMain").hidden = false; $("fbPick").hidden = true; $("fbDone").hidden = true;
@@ -354,17 +357,44 @@ $("rainNowBtn").addEventListener("click", async () => {
   current.raining_now = on;
   current.rained = on ? "yes" : current.rained === "yes" ? null : current.rained;
   try { await updateObs(current.id, { raining_now: on, rained: current.rained }); } catch { /* ignore */ }
+  $("intensityChips").hidden = !on;
   if (on) {
     $("result").style.setProperty("--water", "var(--water-4)");
     $("rainLevel").textContent = "Raining now";
     $("rainPct").textContent = "";
-    $("rainSrc").textContent = `Reported by you. SkyCast estimated ${Math.round(current.rain.score * 100)}% from the ${current.rain.source}.`;
+    $("rainSrc").textContent = `Reported by you. Ghaim estimated ${Math.round(current.rain.score * 100)}% from the ${current.rain.source}.`;
     fillGauge(1);
-    toast("Saved: raining now. Thank you, this helps train SkyCast.");
+    toast("Saved: raining now. Thank you, this helps train Ghaim.");
   } else {
     renderResult(current, current.rain);
   }
 });
+
+$("intensityChips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", async () => {
+  if (!current) return;
+  current.rain_intensity = b.dataset.int;
+  $("intensityChips").querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
+  try { await updateObs(current.id, { rain_intensity: b.dataset.int }); } catch { /* ignore */ }
+}));
+
+// One-tap rain report from the home screen (no photo): ground truth for satellite comparison.
+$("reportChips").querySelectorAll(".chip").forEach((b) => b.addEventListener("click", async () => {
+  const inten = b.dataset.int;
+  const now = new Date();
+  let weather = null;
+  try { weather = await getWeather(); } catch { /* offline: report still counts */ }
+  const o = {
+    id: `${now.getTime()}`, time: localIso(now), time_utc: now.toISOString(),
+    lat: loc.lat, lon: loc.lon, place: loc.gps ? "GPS" : loc.label, gps: !!loc.gps, gps_accuracy_m: loc.acc ?? null,
+    input: "report", top: null, probs: null, rain: null, cues: null, trend: null, weather, photo: null,
+    observer_label: null, rained: null, raining_now: inten !== "none", rain_intensity: inten, app_version: VERSION,
+  };
+  try { await addObs(o); updateCount(); refreshLast(); } catch { /* ignore */ }
+  $("reportChips").querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", String(c === b)));
+  setTimeout(() => $("reportChips").querySelectorAll(".chip").forEach((c) => c.setAttribute("aria-pressed", "false")), 2500);
+  toast(inten === "none" ? "Saved: not raining here" : `Saved: ${inten} rain here now`);
+  if (!loc.gps) setTimeout(() => toast("Tip: tap the location button and use GPS for more precise reports"), 2800);
+}));
 
 $("again").addEventListener("click", () => {
   $("result").hidden = true; $("capture").hidden = false; $("home").hidden = false; current = null;
@@ -384,7 +414,7 @@ updateCount();
 async function refreshLast() {
   try {
     const list = await allObs();
-    renderLast(list[0], NAMES, async (o, v) => {
+    renderLast(list.find((o) => o.input !== "report"), NAMES, async (o, v) => {
       await updateObs(o.id, { rained: v });
       toast(v === "yes" ? "Saved: it rained" : "Saved: it stayed dry");
       refreshLast();
@@ -395,6 +425,34 @@ refreshLast();
 
 const fmt = new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 const urls = [];
+const INT_TEXT = { none: "Not raining", light: "Light rain", moderate: "Moderate rain", heavy: "Heavy rain" };
+function reportItem(li, o) {
+  li.className = "obs";
+  const ic = document.createElement("div");
+  ic.className = "noimg";
+  ic.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 4.6 4.7 4.7 0 0 1 17.5 14Z"/>'
+    + (o.raining_now ? '<path d="m8 17-1 3M12 17l-1 3M16 17l-1 3"/>' : "") + "</svg>";
+  const body = document.createElement("div");
+  const h3 = document.createElement("h3");
+  h3.textContent = `Report: ${INT_TEXT[o.rain_intensity] || "rain"}`;
+  const meta = document.createElement("p");
+  meta.className = "meta";
+  meta.textContent = `${fmt.format(new Date(o.time_utc))}, ${o.gps ? "GPS location" : o.place}`;
+  const row = document.createElement("div");
+  row.className = "row";
+  const del = document.createElement("button");
+  del.type = "button"; del.className = "del"; del.textContent = "Delete";
+  let armed = false;
+  del.addEventListener("click", async () => {
+    if (!armed) { armed = true; del.textContent = "Tap again to delete"; setTimeout(() => { armed = false; del.textContent = "Delete"; }, 3000); return; }
+    await deleteObs(o.id); li.remove(); updateCount(); toast("Report deleted");
+  });
+  row.append(del);
+  body.append(h3, meta, row);
+  li.append(ic, body);
+  return li;
+}
+
 async function renderLog() {
   urls.splice(0).forEach((u) => URL.revokeObjectURL(u));
   let list = [];
@@ -404,6 +462,7 @@ async function renderLog() {
   $("logList").replaceChildren(...list.map((o) => {
     const li = document.createElement("li");
     li.className = "obs";
+    if (o.input === "report") return reportItem(li, o);
     const img = document.createElement("img");
     img.alt = "";
     if (o.photo) { const u = URL.createObjectURL(o.photo); urls.push(u); img.src = u; }
@@ -455,10 +514,10 @@ $("exportBtn").addEventListener("click", async () => {
   $("exportBtn").disabled = true;
   try {
     const blob = await exportZip();
-    const name = `skycast-log-${new Date().toISOString().slice(0, 10)}.zip`;
+    const name = `ghaim-log-${new Date().toISOString().slice(0, 10)}.zip`;
     const file = new File([blob], name, { type: "application/zip" });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: "SkyCast log" }); return; } catch (e) { if (e.name === "AbortError") return; }
+      try { await navigator.share({ files: [file], title: "Ghaim log" }); return; } catch (e) { if (e.name === "AbortError") return; }
     }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob); a.download = name;

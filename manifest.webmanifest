@@ -1,6 +1,6 @@
 {
-  "name": "SkyCast",
-  "short_name": "SkyCast",
+  "name": "Ghaim: Cloud & Rain Watch",
+  "short_name": "Ghaim",
   "description": "Photograph the sky to see the cloud type and the chance of rain in the next 3 hours.",
   "start_url": "./",
   "scope": "./",

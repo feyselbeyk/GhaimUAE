@@ -1,6 +1,6 @@
-// SkyCast service worker: keeps the app, fonts and the sky model on the phone so cloud
+// Ghaim service worker: keeps the app, fonts and the sky model on the phone so cloud
 // recognition works offline. Forecast requests always go to the network.
-const VERSION = "skycast-v2.2.0";
+const VERSION = "ghaim-v2.4.0";
 const SHELL = [
   "./", "index.html", "styles.css", "manifest.webmanifest",
   "js/app.js", "js/rain.js", "js/model.js", "js/sky.js", "js/log.js", "js/home.js",

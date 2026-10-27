@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SkyCast</title>
+<title>Ghaim: Cloud &amp; Rain Watch</title>
 <meta name="description" content="Photograph the sky to see the cloud type and the chance of rain in the next 3 hours.">
 <meta name="theme-color" content="#EAF1F6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0D1520" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="SkyCast">
+<meta name="apple-mobile-web-app-title" content="Ghaim">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
@@ -21,7 +21,7 @@
 <body>
 <div class="app">
   <header class="top">
-    <h1 class="brand">SkyCast</h1>
+    <h1 class="brand"><span lang="en">Ghaim</span> <span class="brand-ar" lang="ar">غيم</span><small class="brand-sub">Cloud &amp; Rain Watch</small></h1>
     <button class="place" id="placeBtn" type="button" aria-haspopup="dialog">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.1-6.5-11A6.5 6.5 0 0 1 18.5 10c0 4.9-6.5 11-6.5 11Z"/><circle cx="12" cy="10" r="2.4"/></svg>
       <span id="placeName">Al Ain</span>
@@ -59,6 +59,17 @@
       </div>
 
       <div class="home" id="home">
+        <section class="panel report" aria-labelledby="reportHead">
+          <h2 id="reportHead" class="panel-h">Is it raining where you are?</h2>
+          <div class="chips" id="reportChips">
+            <button type="button" class="chip" data-int="none">Not raining</button>
+            <button type="button" class="chip" data-int="light">Light rain</button>
+            <button type="button" class="chip" data-int="moderate">Moderate rain</button>
+            <button type="button" class="chip" data-int="heavy">Heavy rain</button>
+          </div>
+          <p class="panel-src">One tap, no photo needed. Reports are compared with NASA and JAXA satellite rainfall to find the rain that satellites miss over the desert.</p>
+        </section>
+
         <section class="panel" id="lastObs" hidden aria-labelledby="lastHead">
           <h2 id="lastHead" class="panel-h">Your last observation</h2>
           <div class="last">
@@ -142,6 +153,13 @@
           It's raining here now
         </button>
 
+        <div class="chips intensity" id="intensityChips" hidden aria-label="How heavy is the rain?">
+          <span class="int-q">How heavy is it?</span>
+          <button type="button" class="chip" data-int="light">Light</button>
+          <button type="button" class="chip" data-int="moderate">Moderate</button>
+          <button type="button" class="chip" data-int="heavy">Heavy</button>
+        </div>
+
         <section class="feedback" id="feedback" aria-labelledby="fbHead">
           <h2 id="fbHead">Was the sky type right?</h2>
           <div class="chips" id="fbMain">
@@ -150,7 +168,7 @@
           </div>
           <div class="chips" id="fbPick" hidden></div>
           <p class="fb-done" id="fbDone" hidden></p>
-          <p class="fb-note">Your answers stay on this phone in the log. They help train SkyCast on UAE skies.</p>
+          <p class="fb-note">Your answers stay on this phone in the log. They help train Ghaim on UAE skies.</p>
         </section>
 
         <details class="more">
@@ -168,7 +186,7 @@
         <h2>Your observations</h2>
         <button type="button" class="btn small" id="exportBtn">Export as zip</button>
       </div>
-      <p class="log-intro">Come back about 3 hours after each photo and record whether it rained. Exported logs can be used to train and check SkyCast on local skies.</p>
+      <p class="log-intro">Come back about 3 hours after each photo and record whether it rained. Exported logs can be used to train and check Ghaim on local skies.</p>
       <ol class="log-list" id="logList"></ol>
       <div class="empty" id="logEmpty" hidden>
         <p>No observations yet.</p>
@@ -178,10 +196,10 @@
 
     <!-- ======================= ABOUT ======================= -->
     <section class="view prose" id="view-about" aria-labelledby="tab-about" hidden>
-      <h2>Install SkyCast on your phone</h2>
+      <h2>Install Ghaim on your phone</h2>
       <p><strong>iPhone:</strong> open this page in Safari, tap the Share button, then <em>Add to Home Screen</em>.</p>
       <p><strong>Android:</strong> open it in Chrome, tap the menu, then <em>Install app</em> or <em>Add to Home screen</em>.</p>
-      <p><button type="button" class="btn small" id="installBtn" hidden>Install SkyCast</button></p>
+      <p><button type="button" class="btn small" id="installBtn" hidden>Install Ghaim</button></p>
       <p>After the first visit the sky model is stored on the phone, so cloud recognition also works without internet. The rain estimate then uses the photo only.</p>
 
       <h2>How it works</h2>

@@ -132,12 +132,12 @@ export function watchFor(w, lat = 24.2, lon = 55.7) {
     return `Forecast models give up to ${Math.round(prob12)}% chance of rain within 12 hours. Photograph darkening or towering clouds as they come, and tap "It's raining here now" if it starts.`;
   }
   if (cape12 >= 800 && !capped) {
-    return `The air becomes unstable later today. Watch for clouds building tall${mountains}. If one starts towering, record a 30-second video: SkyCast checks whether it is growing.`;
+    return `The air becomes unstable later today. Watch for clouds building tall${mountains}. If one starts towering, record a 30-second video: Ghaim checks whether it is growing.`;
   }
   if (w.cloud_base_m !== null && w.cloud_base_m > 2500 && (w.pw_mm ?? 0) < 20) {
     return "Dry, settled air. Any clouds that form are likely to stay high and dry, and showers would mostly evaporate before landing.";
   }
-  return "Quiet conditions. If the sky changes, photograph it: every observation helps train SkyCast on UAE skies.";
+  return "Quiet conditions. If the sky changes, photograph it: every observation helps train Ghaim on UAE skies.";
 }
 
 // ---------------------------------------------------------------- last observation

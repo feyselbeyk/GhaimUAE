@@ -1,4 +1,4 @@
-/* SkyCast: a field instrument for reading the sky outdoors.
+/* Ghaim: a field instrument for reading the sky outdoors.
    Layout: one left-aligned column (max 34rem), fixed tab bar at the bottom.
    The one bold element is the rain gauge; everything else stays quiet. */
 
@@ -77,6 +77,9 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 .brand {
   margin: 0; font: 800 var(--s-3)/1 var(--f-head); font-stretch: 118%; letter-spacing: -0.01em;
 }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 6px; }
+.brand-ar { font: 700 var(--s-2)/1 system-ui, sans-serif; color: var(--ink-2); }
+.brand-sub { flex-basis: 100%; margin-top: 3px; font: 600 var(--s-0)/1.1 var(--f-body); font-stretch: 100%; letter-spacing: 0.02em; color: var(--ink-2); }
 .place {
   display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px 6px 9px;
   border: 1px solid var(--line); border-radius: 999px; background: var(--paper); color: var(--sand);
@@ -202,6 +205,14 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 
 .raining { justify-self: stretch; }
 .raining[aria-pressed="true"] { background: var(--water-4); color: #fff; border-color: transparent; }
+
+.intensity { align-items: center; }
+.int-q { flex-basis: 100%; font-size: var(--s-0); color: var(--ink-2); font-weight: 700; }
+.report .chips { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.report .chip { width: 100%; }
+.report .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+.obs .noimg { width: 72px; height: 72px; border-radius: 10px; background: var(--glass); display: grid; place-items: center; color: var(--accent); }
+.obs .noimg svg { width: 30px; height: 30px; }
 
 /* feedback */
 .feedback h2, .log-head h2, .prose h2, .sheet h2 { font: 700 var(--s-2)/1.25 var(--f-head); font-stretch: 104%; margin: 0; }
